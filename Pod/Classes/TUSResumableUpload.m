@@ -34,6 +34,8 @@
 // Delay time in seconds between retries
 #define DELAY_TIME 5
 
+#define MAX_RETRY_COUNT 6
+
 // Keys used in serialization
 #define STORE_KEY_ID @"id"
 #define STORE_KEY_UPLOAD_URL @"uploadUrl"
@@ -43,7 +45,6 @@
 #define STORE_KEY_METADATA @"metadata"
 #define STORE_KEY_LENGTH @"uploadLength"
 #define STORE_KEY_LAST_STATE @"lastState"
-
 
 typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error);
 
@@ -66,6 +67,8 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
 @property (nonatomic, strong) NSURLSessionTask *currentTask; // Nonatomic because we know we will assign it, then start the thread that will remove it.
 @property (nonatomic, strong) NSURL *fileUrl; // File URL for saving if we created our own TUSData
 @property (readonly) long long length;
+
+@property (nonatomic) int retryCount;
 
 #pragma mark private method headers
 
@@ -314,8 +317,24 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
                     break;
                 default:
                     //TODO: Fail after a certain number of delayed attempts
-                    delayTime = DELAY_TIME;
-                    TUSLog(@"Error or no response during attempt to create file, retrying");
+                    
+                    self.retryCount++;
+                    
+                    if (self.retryCount > MAX_RETRY_COUNT) {
+                        [weakself stop]; // Will prevent continueUpload from doing anything
+                        // Make the callback after the current operation so that the rest of the method will finish.
+                        // Store the block so that we know it will be non-nil in the closure.
+                        TUSUploadFailureBlock block = weakself.failureBlock;
+                        if (block) {
+                            NSInteger statusCode = httpResponse.statusCode;
+                            [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+                                block([[NSError alloc] initWithDomain:TUSErrorDomain code:TUSResumableUploadErrorServer userInfo:@{@"responseCode": @(statusCode)}]);
+                            }];
+                        }
+                    } else {
+                        delayTime = DELAY_TIME;
+                        TUSLog(@"Error or no response during attempt to create file, retrying");
+                    }
             }
         } else if (httpResponse.statusCode >= 500 && httpResponse.statusCode < 600) {
             TUSLog(@"Server error, stopping");
@@ -331,9 +350,24 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
             }
         } else if (httpResponse.statusCode < 200 || httpResponse.statusCode > 204){
             //TODO: FAIL after a certain number of errors.
-            delayTime = DELAY_TIME;
-            TUSLog(@"Server responded to create file with %ld. Trying again",
-                   (long)httpResponse.statusCode);
+            self.retryCount++;
+            if (self.retryCount > MAX_RETRY_COUNT) {
+                [weakself stop]; // Will prevent continueUpload from doing anything
+                // Make the callback after the current operation so that the rest of the method will finish.
+                // Store the block so that we know it will be non-nil in the closure.
+                TUSUploadFailureBlock block = weakself.failureBlock;
+                if (block) {
+                    NSInteger statusCode = httpResponse.statusCode;
+                    [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+                        block([[NSError alloc] initWithDomain:TUSErrorDomain code:TUSResumableUploadErrorServer userInfo:@{@"responseCode": @(statusCode)}]);
+                    }];
+                }
+            } else {
+                delayTime = DELAY_TIME;
+                TUSLog(@"Server responded to create file with %ld. Trying again",
+                       (long)httpResponse.statusCode);
+            }
+            
         } else {
             // Got a valid status code, so update url
             NSString *location = [httpResponse.allHeaderFields valueForKey:HTTP_LOCATION];
@@ -423,8 +457,23 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
                 case NSURLErrorNotConnectedToInternet:
                 default:
                     //TODO: Fail after a certain number of delayed attempts
-                    delayTime = DELAY_TIME;
-                    TUSLog(@"Error or no response during attempt to check file, retrying");
+                    self.retryCount++;
+                    
+                    if (self.retryCount > MAX_RETRY_COUNT) {
+                        [weakself stop]; // Will prevent continueUpload from doing anything
+                        // Make the callback after the current operation so that the rest of the method will finish.
+                        // Store the block so that we know it will be non-nil in the closure.
+                        TUSUploadFailureBlock block = weakself.failureBlock;
+                        if (block) {
+                            NSInteger statusCode = httpResponse.statusCode;
+                            [[NSOperationQueue currentQueue] addOperationWithBlock:^{
+                                block([[NSError alloc] initWithDomain:TUSErrorDomain code:TUSResumableUploadErrorServer userInfo:@{@"responseCode": @(statusCode)}]);
+                            }];
+                        }
+                    } else {
+                        delayTime = DELAY_TIME;
+                        TUSLog(@"Error or no response during attempt to check file, retrying");
+                    }
             }
         } else if (httpResponse.statusCode == 423) {
             // We only check 423 errors in checkFile because the other methods will properly handle locks with their generic error handling.
