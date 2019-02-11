@@ -9,12 +9,12 @@ Pod::Spec.new do |s|
   s.homepage         = "https://github.com/tus/tus-ios-client"
   s.license          = 'MIT'
   s.author           = { "Michael Avila" => "me@michaelavila.com","Mark Robert Masterson" => "mrobertmasterson@gmail.com", "Mark Robert Masterson" => "mark@masterson.io"  }
-  s.source           = { :git => "https://github.com/tus/tus-ios-client.git", :tag => s.version.to_s }
+  s.source           = { :git => "https://github.com/Dcard/TUSKit.git", :branch => 'development' }
 
   s.ios.deployment_target = "8.0"
   s.osx.deployment_target = "10.10"
   s.requires_arc = true
 
-  s.source_files = 'Pod/Classes/**/*'
+  s.source_files = 'Pod/Classes/**/*.{h,m}'
 end
 
