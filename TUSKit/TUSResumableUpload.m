@@ -583,6 +583,7 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
         }
         if (error != nil || httpResponse == nil){
             TUSLog(@"Error or no response during attempt to upload file, checking state");
+            [self.data.dataStream close];
             // No need to delay, because we are changing states - if there is a network or server error, it will keep delaying there
             weakself.state = TUSResumableUploadStateCheckingFile;
         } else if (httpResponse.statusCode >= 500 && httpResponse.statusCode < 600) {
@@ -600,6 +601,7 @@ typedef void(^NSURLSessionTaskCompletionHandler)(NSData * _Nullable data, NSURLR
             }
         } else if (httpResponse.statusCode < 200 || httpResponse.statusCode > 204){
             TUSLog(@"Invalid status code (%ld) during attempt to upload, checking state", (long)httpResponse.statusCode);
+            [self.data.dataStream close];
             // No need to delay, because we are changing states: if there is a network or server error, it will delay in the checking state
             weakself.state = TUSResumableUploadStateCheckingFile;
         } else {
