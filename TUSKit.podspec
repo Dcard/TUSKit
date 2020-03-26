@@ -14,7 +14,6 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = "10.10"
   s.requires_arc = true
   s.module_name = 'TUSKit'
-  s.module_map = 'Supporting Files/module.modulemap'
-  s.source_files = 'TUSKit/*.{h,m}', 'Supporting Files/*.{h}'
+  s.source_files = 'TUSKit/*.{h,m}', 'Supporting Files/*.{h}', 'Pod/Classes/**/*.{h,m}''
 end
 
