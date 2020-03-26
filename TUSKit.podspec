@@ -7,8 +7,8 @@ Pod::Spec.new do |s|
                        DESC
   s.homepage         = "https://github.com/tus/tus-ios-client"
   s.license          = 'MIT'
-  s.author           = { "Michael Avila" => "me@michaelavila.com", "Mark Robert Masterson" => "mark@masterson.io" }
-  s.source           = { :git => "https://github.com/tus/tus-ios-client.git", :tag => s.version.to_s }
+  s.author           = { "Michael Avila" => "me@michaelavila.com","Mark Robert Masterson" => "mrobertmasterson@gmail.com", "Mark Robert Masterson" => "mark@masterson.io"  }
+  s.source           = { :git => "https://github.com/Dcard/TUSKit.git", :branch => 'development' }
 
   s.ios.deployment_target = "8.0"
   s.osx.deployment_target = "10.10"
