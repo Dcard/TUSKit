@@ -65,7 +65,7 @@
         self.outputStream = outStream;
         self.outputStream.delegate = self;
         [self.outputStream scheduleInRunLoop:[NSRunLoop currentRunLoop]
-                                     forMode:NSDefaultRunLoopMode];
+                                     forMode:NSRunLoopCommonModes];
         [self.outputStream open];
     }
     return self.inputStream;
@@ -75,7 +75,7 @@
 {
     self.outputStream.delegate = nil;
     [self.outputStream removeFromRunLoop:[NSRunLoop currentRunLoop]
-                                   forMode:NSDefaultRunLoopMode];
+                                   forMode:NSRunLoopCommonModes];
     [self.outputStream close];
     self.outputStream = nil;
 
